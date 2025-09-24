@@ -28,7 +28,7 @@ struct Stack_Info {
     Stack_t *data;
     int size;
     int capacity;
-    Source_Location_Info *var_info;
+    Source_Location_Info var_info;
 };
 
 #endif //STRUCTS_ENUMS_H_

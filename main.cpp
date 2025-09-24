@@ -4,12 +4,14 @@
 #include "StackFunctions.h"
 
 #define DEBUG
-// #define INIT(name) struct Stack_Info name = {.Source_Location_Info.func_name = __func__, .Source_Location_Info.file_name = __FILE__,\
-// .Source_Location_Info.var = #name, .Source_Location_Info.line = __LINE__};
+#define INIT(name) \
+    Stack_Info name = { \
+        nullptr, 0, 0, \
+        { __FILE__, __func__, #name, __LINE__ } \
+    };
 
 int main(void) {
-    //INIT(stk1);
-    struct Stack_Info stk1 = {};
+    INIT(stk1);
     StackCtor(&stk1, 1);
     StackPush(&stk1, 10);
     StackPush(&stk1, 20);

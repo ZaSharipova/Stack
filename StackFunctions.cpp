@@ -21,7 +21,7 @@ StackErr_t StackCtor(Stack_Info *stk, Stack_t value) {
         return kNullPointer;
     }
 
-    stk->data = (Stack_t *)calloc((size_t)value, sizeof(Stack_t));
+    stk->data = (Stack_t *) calloc((size_t)value, sizeof(Stack_t));
     if (stk->data == NULL) {
         return kNoMemory;
     }
@@ -101,7 +101,7 @@ StackErr_t StackTop(Stack_Info stk, Stack_t *value) {
     if (stk.capacity == 0) {
         return kEmptyStack;
     }
-    
+
     *value = stk.data[stk.size - 1];
     return kSuccess;
 }
@@ -156,7 +156,7 @@ StackErr_t StackDtor(Stack_Info *stk) {
     free(stk);
     stk->size = -1;
     stk->capacity = -1;
-    stk->var_info = NULL;
+    stk->var_info = {NULL, NULL, 0};
 
     return kSuccess;
 }
@@ -165,6 +165,9 @@ Stack_t StackDump(FILE *file, Stack_Info stk, const char *func_name, int line, c
     assert(file);
 
     fprintf(file, "from %s, function %s: line %d\n", file_from, func_name, line);
+    fprintf(file, "error = %s\n", (const char *)err); //bad
+    fprintf(file, "Stack name: %s\n", name);
+    fprintf(file, "Stack made: %s, function %s, line: %d\n", stk.var_info.file_name, stk.var_info.func_name, stk.var_info.line);
     fprintf(file, "STACK[%p] {\n", stk.data);
     fprintf(file, "  size = %d\n", stk.size);
     fprintf(file, "  capacity = %d\n", stk.capacity);
