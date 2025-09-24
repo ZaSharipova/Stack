@@ -3,19 +3,19 @@
 
 #include <stdio.h>
 
-enum StackErr_t {
-    kSuccess = 0,
-    kNegativeSize = -1,
-    kNegativeCapacity = -2,
-    kErrorOpening = -2,
-    kErrorClosing = -3,
-    kNoMemory = -4, //TODO rename
-    kNullPointer = -5,
-    kErrorSize = -6,
-    kEmptyStack = -7,
-};
-
 typedef int Stack_t;
+
+enum StackErr_t {
+    kSuccess          =  0,
+    kNegativeSize     = -1,
+    kNegativeCapacity = -2,
+    kErrorOpening     = -3,
+    kErrorClosing     = -4,
+    kNoMemory         = -5,
+    kNullPointer      = -6,
+    kErrorSize        = -7,
+    kEmptyStack       = -8,
+};
 
 struct Source_Location_Info {
     const char *file_name;
@@ -26,9 +26,15 @@ struct Source_Location_Info {
 
 struct Stack_Info {
     Stack_t *data;
-    int size;
+    int size; //
     int capacity;
-    Source_Location_Info var_info;
+    Source_Location_Info create_var_info;
+};
+
+enum Realloc_Mode {
+    kIncrease,
+    kDecrease,
+    kNoChange,
 };
 
 #endif //STRUCTS_ENUMS_H_

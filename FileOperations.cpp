@@ -1,11 +1,11 @@
 #include "FileOperations.h"
 
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "StructsEnums.h"
 
-FILE *open_file(const char *filename, const char *mode) {
+FILE *Open_File(const char *filename, const char *mode) {
     assert(filename != NULL);
     assert(mode     != NULL);
 
@@ -18,7 +18,7 @@ FILE *open_file(const char *filename, const char *mode) {
     return file;
 }
 
-StackErr_t close_file(FILE *file) {
+StackErr_t Close_File(FILE *file) {
     assert(file != NULL);
 
     int status = fclose(file);

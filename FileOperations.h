@@ -2,9 +2,10 @@
 #define FILE_OPERATIONS_H_
 
 #include <stdio.h>
+
 #include "StructsEnums.h"
 
-FILE *open_file(const char *filename, const char *mode);
-StackErr_t close_file(FILE *file);
+FILE *Open_File(const char *filename, const char *mode);
+StackErr_t Close_File(FILE *file);
 
 #endif //FILE_OPERATIONS_H_
