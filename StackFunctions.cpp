@@ -6,17 +6,20 @@
 #include "StructsEnums.h"
 
 #define STACKDUMP(file, name, err) StackDump(file, *name, __func__, __LINE__, __FILE__, err, #name)
+#define MY_SPEC "%d"
 
 StackErr_t StackCtor(Stack_Info *stk, int value) {
     assert(stk);
 
     stk->capacity = value;
 
+#ifndef NDEBUG
     StackErr_t err = CheckError(stk);
     if (err != kSuccess) {
         STACKDUMP(stdout, stk, err);
         return err;
     }
+#endif
 
     stk->data = (Stack_t *) calloc((size_t)value, sizeof(Stack_t));
     if (stk->data == NULL) {
@@ -30,11 +33,13 @@ StackErr_t StackCtor(Stack_Info *stk, int value) {
 StackErr_t StackPush(Stack_Info *stk, Stack_t value) {
     assert(stk);
 
+#ifndef NDEBUG
     StackErr_t err = CheckError(stk);
     if (err != kSuccess) {
         STACKDUMP(stdout, stk, err);
         return err;
     }
+#endif
 
     Realloc_Mode realloc_type = CheckSize(stk->size, &stk->capacity);
     if (realloc_type != kNoChange) {
@@ -46,11 +51,13 @@ StackErr_t StackPush(Stack_Info *stk, Stack_t value) {
 
     stk->data[stk->size++] = value;
 
-    err = CheckError(stk);
+#ifndef NDEBUG
+    StackErr_t err = CheckError(stk);
     if (err != kSuccess) {
         STACKDUMP(stdout, stk, err);
         return err;
     }
+#endif
 
     STACKDUMP(stdout, stk, kSuccess);
     return kSuccess;
@@ -60,11 +67,13 @@ StackErr_t StackPop(Stack_Info *stk, Stack_t *value) {
     assert(stk);
     assert(value);
 
+#ifndef NDEBUG
     StackErr_t err = CheckError(stk);
     if (err != kSuccess) {
         STACKDUMP(stdout, stk, err);
         return err;
     }
+#endif
 
     if (stk->size == 0) {
         return kEmptyStack;
@@ -86,6 +95,14 @@ StackErr_t StackPop(Stack_Info *stk, Stack_t *value) {
         }
     }
 
+#ifndef NDEBUG
+    StackErr_t err = CheckError(stk); //точно ли здесь это надо
+    if (err != kSuccess) {
+        STACKDUMP(stdout, stk, err);
+        return err;
+    }
+#endif
+
     STACKDUMP(stdout, stk, kSuccess);
     return kSuccess;
 }
@@ -93,11 +110,13 @@ StackErr_t StackPop(Stack_Info *stk, Stack_t *value) {
 StackErr_t StackTop(Stack_Info stk, Stack_t *value) {
     assert(value);
 
+#ifndef NDEBUG
     StackErr_t err = CheckError(&stk);
     if (err != kSuccess) {
         STACKDUMP(stdout, &stk, err);
         return err;
     }
+#endif
     
     if (stk.size == 0) {
         return kEmptyStack;
@@ -130,27 +149,30 @@ Realloc_Mode CheckSize(int size, int *capacity) { //если размеры оч
 StackErr_t StackRealloc(Stack_Info *stk) {
     assert(stk);
 
+#ifndef NDEBUG
     StackErr_t err = CheckError(stk);
     if (err != kSuccess) {
         STACKDUMP(stdout, stk, err);
         return err;
     }
+#endif
 
-    printf("%d\n", stk->capacity);
     Stack_t *realloc_ptr = (Stack_t *) realloc(stk->data, (size_t)stk->capacity * sizeof(Stack_t));
     if (realloc_ptr != NULL) {
         stk->data = realloc_ptr;
     } else {
-        free(stk->data); //надо ли
+        free(stk->data);
         return kNoMemory;
     }
 
 
-    err = CheckError(stk);
+#ifndef NDEBUG
+    StackErr_t err = CheckError(stk);
     if (err != kSuccess) {
         STACKDUMP(stdout, stk, err);
         return err;
     }
+#endif
 
     return kSuccess;
 }
@@ -181,7 +203,7 @@ Stack_t StackDump(FILE *file, Stack_Info stk, const char *func_name, int line, c
     fprintf(file, "from %s, function %s: line %d\n", file_from, func_name, line);
     fprintf(file, "error = %s\n", GetErrorString(err)); 
     fprintf(file, "Stack name: %s\n", name);
-    fprintf(file, "Stack made: %s, function %s, line: %d\n", stk.create_var_info.file_name, stk.create_var_info.func_name, stk.create_var_info.line);
+    fprintf(file, "Stack made: %s, function %s: line %d\n", stk.create_var_info.file_name, stk.create_var_info.func_name, stk.create_var_info.line);
     fprintf(file, "STACK[%p] {\n", stk.data);
     fprintf(file, "  size = %d\n", stk.size);
     fprintf(file, "  capacity = %d\n", stk.capacity);
@@ -189,7 +211,7 @@ Stack_t StackDump(FILE *file, Stack_Info stk, const char *func_name, int line, c
 
     int pos = 0;
     while(pos < stk.size) {
-        fprintf(file, "  *[%d] = %d\n", pos, stk.data[pos]); //TODO what to do with Stack_t
+        fprintf(file, "  *[%d] = " MY_SPEC "\n", pos, stk.data[pos]);
         pos++;
     }
 

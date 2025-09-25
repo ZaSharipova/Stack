@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include "StructsEnums.h"
 #include "StackFunctions.h"
+#include "StructsEnums.h"
 
 #define DEBUG
 #define INIT(name) \
@@ -11,31 +11,46 @@
     };
 
 #define CHECK_ERROR(err) \
-    if (err != kSuccess){ \
+    if (err != kSuccess) { \
+        return err; \
+    }
+
+#define CALL_CHECK(call) \
+    err = (call); \
+    if (err != kSuccess) { \
         return err; \
     }
 
 int main(void) {
     INIT(stk1);
     StackErr_t err = kSuccess;
-    err = StackCtor(&stk1, 10); //change
-    CHECK_ERROR(err);
+    CALL_CHECK(StackCtor(&stk1, -1));
+    CALL_CHECK(StackPush(&stk1, 10));  
+    CALL_CHECK(StackPush(&stk1, 20));
+    CALL_CHECK(StackPush(&stk1, 30));  
 
-    StackPush(&stk1, 10);
-    CHECK_ERROR(err);
+    Stack_t x = 0; 
+    CALL_CHECK(StackPop(&stk1, &x));   
+    CALL_CHECK(StackDtor(&stk1));
 
-    StackPush(&stk1, 20);
-    CHECK_ERROR(err);
+    // err = StackCtor(&stk1, 10); //change
+    // CHECK_ERROR(err);
 
-    StackPush(&stk1, 30);
-    CHECK_ERROR(err);
+    // err = StackPush(&stk1, 10);
+    // CHECK_ERROR(err);
 
-    Stack_t x = 0;
-    StackPop(&stk1, &x);
-    CHECK_ERROR(err);
+    // err = StackPush(&stk1, 20);
+    // CHECK_ERROR(err);
 
-    StackDtor(&stk1);
-     CHECK_ERROR(err);
+    // err = StackPush(&stk1, 30);
+    // CHECK_ERROR(err);
+
+    // Stack_t x = 0;
+    // err = StackPop(&stk1, &x);
+    // CHECK_ERROR(err);
+
+    // err = StackDtor(&stk1);
+    // CHECK_ERROR(err);
 
     //StackDump(stdout, stk1);
     return 0;
