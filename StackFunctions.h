@@ -16,4 +16,7 @@ Stack_t StackDump(FILE *file, Stack_Info stk, const char *func_name, int line, c
 StackErr_t CheckError(Stack_Info *stk);
 const char* GetErrorString(StackErr_t err);
 
+Stack_t ImagineValue(void);
+StackErr_t MakeCanary(Stack_Info *stk, int value);
+
 #endif //STACK_FUNCTIONS_H_

@@ -26,14 +26,13 @@ struct Source_Location_Info {
 
 struct Stack_Info {
     Stack_t *data;
-    int size; //
+    int size;
     int capacity;
     Source_Location_Info create_var_info;
 };
 
 enum Realloc_Mode {
-    kIncrease,
-    kDecrease,
+    kDoChange,
     kNoChange,
 };
 

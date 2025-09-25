@@ -3,8 +3,7 @@
 #include "StackFunctions.h"
 #include "StructsEnums.h"
 
-#define DEBUG
-#define INIT(name) \
+#define INIT_DEBUG(name) \
     Stack_Info name = { \
         nullptr, 0, 0, \
         { __FILE__, __func__, #name, __LINE__ } \
@@ -22,9 +21,15 @@
     }
 
 int main(void) {
-    INIT(stk1);
+    #define DEBUG
+    Stack_Info stk1 = {};
+
+#ifdef DEBUG
+    stk1.create_var_info = {NULL, NULL, NULL, 0};
+#endif
+
     StackErr_t err = kSuccess;
-    CALL_CHECK(StackCtor(&stk1, -1));
+    CALL_CHECK(StackCtor(&stk1, 1));
     CALL_CHECK(StackPush(&stk1, 10));  
     CALL_CHECK(StackPush(&stk1, 20));
     CALL_CHECK(StackPush(&stk1, 30));  
