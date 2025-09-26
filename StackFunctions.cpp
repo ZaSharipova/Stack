@@ -6,10 +6,9 @@
 #include <time.h>
 
 #include "StructsEnums.h"
+#include "StackHash.h"
 
-#define STACKDUMP(file, name, err, file_out) StackDump(file, *name, __func__, __LINE__, __FILE__, err, #name)
-#define MY_SPEC "%d"
-
+#define STACKDUMP(file, name, err) StackDump(file, *name, __func__, __LINE__, __FILE__, err, #name)
 
 uint32_t stack_canary_left;
 uint32_t stack_canary_right;
@@ -18,9 +17,13 @@ StackErr_t StackCtor(Stack_Info *stk, ssize_t value, FILE *file) {
     assert(stk);
 
     stk->capacity = value;
-    if (value < 2) {
-        stk->capacity = 2;
+    if (value < 0) {
+        STACKDUMP(file, stk, kNegativeCapacity);
+        return kNegativeCapacity;
     }
+    // if (value < 2) {
+    //     stk->capacity = 2;
+    // }
 
     stk->size = 0;
 
@@ -33,14 +36,16 @@ StackErr_t StackCtor(Stack_Info *stk, ssize_t value, FILE *file) {
 #ifdef _DEBUG
     err = MakeCanary(stk, file);
     if (err != kSuccess) {
+        STACKDUMP(file, stk, kNoMemory);
         return err;
     }
+    update_data_hash(stk);
 #else
     stk->data = (Stack_t *) calloc ((size_t)value, sizeof(Stack_t));
 #endif
 
     if (stk->data == NULL) {
-        STACKDUMP(stdout, stk, kNoMemory, file);
+        STACKDUMP(file, stk, kNoMemory);
         return kNoMemory;
     }
 
@@ -64,6 +69,7 @@ StackErr_t StackPush(Stack_Info *stk, Stack_t value, FILE *file) {
     }
 
     stk->data[stk->size++] = value;
+    update_data_hash(stk);
 
     err = CheckError(stk, file);
     if (err != kSuccess) {
@@ -87,6 +93,8 @@ StackErr_t StackPop(Stack_Info *stk, Stack_t *value, FILE *file) {
     }
 
     *value = stk->data[--stk->size];
+
+    update_data_hash(stk);
 
     err = CheckError(stk, file);
     if (err != kSuccess) {
@@ -118,7 +126,7 @@ StackErr_t StackTop(Stack_Info stk, Stack_t *value, FILE *file) {
     }
     
     if (stk.size == 0) {
-        STACKDUMP(stdout, &stk, kEmptyStack, file);
+        STACKDUMP(file, &stk, kEmptyStack);
         return kEmptyStack;
     }
 
@@ -162,8 +170,7 @@ StackErr_t StackRealloc(Stack_Info *stk, FILE *file) {
 
     Stack_t *realloc_ptr = (Stack_t *) realloc(stk->real_data, ((size_t)new_elems) * sizeof(*realloc_ptr));
     if (realloc_ptr == NULL) {
-
-        STACKDUMP(stdout, stk, kNoMemory, file);
+        STACKDUMP(file, stk, kNoMemory);
         return kNoMemory;
     }
 
@@ -198,6 +205,7 @@ StackErr_t StackDtor(Stack_Info *stk, FILE *file) {
 
 #ifdef _DEBUG
         stk->create_var_info = {NULL, NULL, 0};
+        stk->data_hash = 0;
 #endif
 
     return kSuccess;
@@ -210,7 +218,7 @@ Stack_t StackDump(FILE *file, Stack_Info stk, const char *func_name, int line, c
     assert(name);
 
     fprintf(file, "from %s, function %s: line %d\n", file_from, func_name, line);
-    fprintf(file, "error = %s\n", GetErrorString(err)); 
+    fprintf(file, "error = %s%s%s\n", RED(file), GetErrorString(err), RESET(file)); 
     fprintf(file, "Stack name: %s\n", name);
 
 #ifdef _DEBUG
@@ -238,9 +246,11 @@ Stack_t StackDump(FILE *file, Stack_Info stk, const char *func_name, int line, c
     fprintf(file, "}\n");
 
 #ifdef _DEBUG
-    fprintf(file, "  canary_left = %u (real[%d])\n", stk.real_data[0], 0);
-    fprintf(file, "  canary_right = %u (real[%zd])\n", 
-        stk.real_data[stk.capacity + 1], stk.capacity + 1);
+    if (stk.capacity >= 0) {
+        fprintf(file, "  canary_left = %u (real[%d])\n", stk.real_data[0], 0);
+        fprintf(file, "  canary_right = %u (real[%zd])\n", 
+            stk.real_data[stk.capacity + 1], stk.capacity + 1);
+    }
 #endif
 
     return kSuccess;
@@ -250,48 +260,53 @@ StackErr_t CheckError(Stack_Info *stk, FILE *file) {
     assert(stk);
 
     if (stk == NULL) {
-        STACKDUMP(stdout, stk, kNullPointer, file);
+        STACKDUMP(file, stk, kNullPointer);
         return kNullPointer;
     }
 
     if (stk->data == NULL) {
-        STACKDUMP(stdout, stk, kNullPointer, file);
+        STACKDUMP(file, stk, kNullPointer);
         return kNullPointer;
     }
 
     if (stk->size > stk->capacity) {
-        STACKDUMP(stdout, stk, kErrorSize, file);
+        STACKDUMP(file, stk, kErrorSize);
         return kErrorSize;
     }
 
 #ifdef _DEBUG
     if (stk->create_var_info.func_name == NULL || stk->create_var_info.file_name == NULL || \
     stk->create_var_info.var == NULL) {
-        STACKDUMP(stdout, stk, kNullPointer, file);
+        STACKDUMP(file, stk, kNullPointer);
         return kNullPointer;
     }
 #endif
 
     if (stk->size < 0) {
-        STACKDUMP(stdout, stk, kNegativeSize, file);
+        STACKDUMP(file, stk, kNegativeSize);
         return kNegativeSize;
     }
 
     if (stk->capacity < 0) {
-        STACKDUMP(stdout, stk, kNegativeCapacity, file);
+        STACKDUMP(file, stk, kNegativeCapacity);
         return kNegativeCapacity;
     }
  
 #ifdef _DEBUG
 
     if (stk->canary_left != (uint32_t)stk->real_data[0]) {
-        STACKDUMP(stdout, stk, kWrongCanaryLeft, file);
+        STACKDUMP(file, stk, kWrongCanaryLeft);
         return kWrongCanaryLeft;
     }
 
     if (stk->canary_right != (uint32_t)stk->real_data[stk->capacity + 1]) {
-        STACKDUMP(stdout, stk, kWrongCanaryRight, file);
+        STACKDUMP(file, stk, kWrongCanaryRight);
         return kWrongCanaryRight;
+    }
+
+    if (!check_data_hash(stk)) {
+        STACKDUMP(file, stk, kHashMismatch);
+        return kHashMismatch;
     }
 #endif
 
@@ -311,6 +326,7 @@ const char *GetErrorString(StackErr_t err) {
         case kErrorClosing: return "Close file failed";
         case kWrongCanaryLeft: return "Wrong canary left value";
         case kWrongCanaryRight: return "Wrong canary right value";
+        case kHashMismatch: return "Hash mismatch. Stack corrupted";
         default: return "Unknown error";
     }
 }
@@ -320,7 +336,7 @@ StackErr_t MakeCanary(Stack_Info *stk, FILE *file) {
 
     Stack_t *stack_ptr = (Stack_t *) calloc((size_t)stk->capacity + 2, sizeof(*stack_ptr));
     if (stack_ptr == NULL) {
-        STACKDUMP(stdout, stk, kNoMemory, file);
+        STACKDUMP(file, stk, kNoMemory);
         return kNoMemory;
     }
 
@@ -334,10 +350,27 @@ StackErr_t MakeCanary(Stack_Info *stk, FILE *file) {
     stk->real_data[0] = (Stack_t)stk->canary_left;
     stk->real_data[stk->capacity + 1] = (Stack_t)stk->canary_right;
 
+    printf("%u", stack_canary_left);
     return kSuccess;
 }
 
 uint32_t Init_Canary(void) {
     srand((unsigned int)time(NULL));
     return ((uint32_t)rand() << 16) | (uint32_t)rand();
+}
+
+double bin_search(Stack_t n) {
+    double l = 0;
+    double r = (double)n;
+    while (r - l > 1e-9) {
+        
+        double mid = (l + r) / 2;
+        if (mid * mid  > n) {
+            r = mid;
+        } else {
+            l = mid;
+        }
+    }
+
+    return l;
 }

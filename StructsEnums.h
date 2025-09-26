@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#define MY_SPEC "%d"
+
 typedef int Stack_t;
 
 enum StackErr_t {
@@ -18,6 +20,8 @@ enum StackErr_t {
     kEmptyStack       =  -8,
     kWrongCanaryLeft  =  -9,
     kWrongCanaryRight = -10,
+    kHashMismatch     = -11,
+    kNoCommand        = -12,
 };
 
 enum ParseErr_t {
@@ -43,6 +47,7 @@ struct Stack_Info {
     Source_Location_Info create_var_info;
     uint32_t canary_left;
     uint32_t canary_right;
+    uint32_t data_hash;
 #endif
 };
 

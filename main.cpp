@@ -5,9 +5,7 @@
 #include "ParseCommandLine.h"
 #include "StackFunctions.h"
 #include "StructsEnums.h"
-
-#define RED(stream)   (isatty(fileno(stream)) ? "\033[1;31m" : "")
-#define RESET(stream) (isatty(fileno(stream)) ? "\033[0m" : "")
+#include "ParseInput.h"
 
 // #define DEBUG
 #define INIT_DEBUG(name) \
@@ -19,11 +17,6 @@
 #define INIT_NDEBUG(name) \
     Stack_Info name = {.data = nullptr, .size = 0, .capacity = 0}
 
-#define CALL_CHECK(call) \
-    err = (call); \
-    if (err != kSuccess) { \
-        return err; \
-    }
 
 int main(int argc, const char **argv) {
     const char *log_file = NULL;
@@ -38,8 +31,6 @@ int main(int argc, const char **argv) {
         if (open_log == NULL) {
             return kErrorOpening;
         }
-        fprintf(open_log, "%s hello %s", RED(open_log), RESET(open_log));
-        fclose(open_log);
     }
 
 
@@ -49,17 +40,26 @@ int main(int argc, const char **argv) {
     INIT_NDEBUG(stk1);
 #endif
 
-
+    FILE *file = Open_File("input.txt", "r");
     StackErr_t err = kSuccess;
     CALL_CHECK(StackCtor(&stk1, 1, open_log));
-    CALL_CHECK(StackPush(&stk1, 10, open_log));  
-    CALL_CHECK(StackPush(&stk1, 20, open_log));
-    CALL_CHECK(StackPush(&stk1, 30, open_log));  
+    err = parse_graphics(&stk1, file);
+    if (err != kSuccess) {
+        return err;
+    }
 
-    Stack_t x = 0; 
-    CALL_CHECK(StackPop(&stk1, &x, open_log));   
-    CALL_CHECK(StackDtor(&stk1, open_log));
+    // CALL_CHECK(StackPush(&stk1, 10, open_log));  
+    // CALL_CHECK(StackPush(&stk1, 20, open_log));
+    // CALL_CHECK(StackPush(&stk1, 30, open_log));  
 
+    // Stack_t x = 0; 
+    // CALL_CHECK(StackPop(&stk1, &x, open_log));   
+    // CALL_CHECK(StackDtor(&stk1, open_log));
+
+    if (error == kOpen) {
+        fclose(open_log);
+    }
+    fclose(file);
     // err = StackCtor(&stk1, 10); //change
     // CHECK_ERROR(err);
 

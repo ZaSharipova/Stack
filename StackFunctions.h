@@ -3,8 +3,12 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "StructsEnums.h"
+
+#define RED(stream)   (isatty(fileno(stream)) ? "\033[1;31m" : "")
+#define RESET(stream) (isatty(fileno(stream)) ? "\033[0m" : "")
 
 #define INCREASE_VALUE 2
 #define DECREASE_VALUE 4
@@ -22,4 +26,5 @@ const char* GetErrorString(StackErr_t err);
 uint32_t Init_Canary(void);
 StackErr_t MakeCanary(Stack_Info *stk, FILE *file);
 
+double bin_search(Stack_t n);
 #endif //STACK_FUNCTIONS_H_
