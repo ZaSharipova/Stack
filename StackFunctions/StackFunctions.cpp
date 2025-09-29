@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
+#include <limits.h>
 
 #include "Canary.h"
 #include "StructsEnums.h"
@@ -92,6 +93,7 @@ StackErr_t StackPop(Stack_Info *stk, Stack_t *value, FILE *open_log_file) {
     }
 
     *value = stk->data[--stk->size];
+    stk->data[stk->size] = 0;
 
     update_data_hash(stk);
 
@@ -332,6 +334,7 @@ const char *GetErrorString(StackErr_t err) {
         case kWrongCanaryLeft: return "Wrong canary left value";
         case kWrongCanaryRight: return "Wrong canary right value";
         case kHashMismatch: return "Hash mismatch. Stack corrupted";
+        case kNoCommand: return "No command found";
         default: return "Unknown error";
     }
 }
@@ -351,4 +354,4 @@ double bin_search(Stack_t n) {
     }
 
     return l;
-}
+} // убрать куда-нибудь

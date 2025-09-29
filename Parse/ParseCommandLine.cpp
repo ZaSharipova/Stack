@@ -10,7 +10,7 @@
 ParseErr_t Parse_Input(const char **argv, int argc, Files *in_out_files) {
     assert(argv);
 
-    size_t pos = 1;
+    int pos = 1;
 
     if (argc == 2) {
         printf("Please, enter normally next time.\n");

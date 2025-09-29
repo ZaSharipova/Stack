@@ -9,12 +9,13 @@
 #include "StackFunctions.h"
 
 static Stack_t Add(Stack_t a, Stack_t b);
-static Stack_t Sub(Stack_t a, Stack_t b) ;
+static Stack_t Sub(Stack_t a, Stack_t b);
 static Stack_t Mul(Stack_t a, Stack_t b);
 static StackErr_t StackBinaryOp(Stack_Info *stk, Stack_t (*op)(Stack_t, Stack_t), FILE *file);
 
 StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file) {
     assert(stk);
+    assert(file);
 
     char *command = (char *)calloc(1000, sizeof(char));
     if (command == NULL) {
@@ -64,7 +65,7 @@ StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file) {
 
         } else if (strcmp(command, SQRT) == 0) {
             CALL_CHECK(StackPop(stk, &num, file));
-            num = bin_search((Stack_t)num);
+            num = (Stack_t)bin_search(num);
             CALL_CHECK(StackPush(stk, num, file));
 
         } else {
@@ -97,7 +98,7 @@ static StackErr_t StackBinaryOp(Stack_Info *stk, Stack_t (*op)(Stack_t, Stack_t)
     assert(stk);
     assert(op);
     assert(file);
-    
+
     Stack_t rhs = 0, lhs = 0, result = 0;
     StackErr_t err = kSuccess;
 
