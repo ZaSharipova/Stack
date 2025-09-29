@@ -25,9 +25,9 @@ enum StackErr_t {
 };
 
 enum ParseErr_t {
-    kNoNeedToOpen =  0,
-    kOpen,
-    kNoType  = -1,
+    kNoError      = 0,
+    kErrorParsing = -1,
+    kWrongMode    = -2,
 };
 
 struct Source_Location_Info {
@@ -54,6 +54,14 @@ struct Stack_Info {
 enum Realloc_Mode {
     kDoChange,
     kNoChange,
+};
+
+struct Files {
+    FILE *open_log_file;
+    const char *in_file;
+    FILE *open_in_file;
+    const char *out_file;
+    FILE *open_out_file;
 };
 
 #endif //STRUCTS_ENUMS_H_

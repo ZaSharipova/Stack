@@ -18,13 +18,17 @@ uint32_t hash_data(const Stack_t *data, ssize_t size) {
 void update_data_hash(Stack_Info *stk) {
     assert(stk);
 
+#ifdef _DEBUG
     stk->data_hash = hash_data(stk->data, stk->size);
+#endif
 }
 
 int check_data_hash(const Stack_Info *stk) {
     assert(stk);
-
+    
+#ifdef _DEBUG
     return (stk->data_hash == hash_data(stk->data, stk->size));
+#endif
 }
 
 
