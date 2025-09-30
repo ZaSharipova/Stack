@@ -13,15 +13,16 @@ static Stack_t Sub(Stack_t a, Stack_t b);
 static Stack_t Mul(Stack_t a, Stack_t b);
 static StackErr_t StackBinaryOperation(Stack_Info *stk, Stack_t (*operation)(Stack_t, Stack_t), FILE *file);
 
-StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file, FILE *open_log_file) {
+StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file, FILE *open_log_file, FILE *open_out_file) {
     assert(stk);
     assert(file);
+    assert(open_out_file);
 
     if (file == stdin) {
-        printf("Введите команды PUSH, ADD, POP, DIV, BIN.\n");
+        printf("Введите команды PUSH, ADD, POP, DIV, MUL, SQRT.\n");
     }
 
-    char *command = (char *) calloc(1000, sizeof(char));
+    char *command = (char *) calloc (1000, sizeof(char));
     if (command == NULL) {
         printf("No memory in calloc to read buf.\n");
         return kNoMemory;
@@ -32,35 +33,34 @@ StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file, FILE *open_log_file) {
     StackErr_t err = kSuccess;
     Stack_t num = 0;
 
-
     while (strcmp(command, HLT) != 0) {
 
         if (strcmp(command, PUSH) == 0) {
             if (fscanf(file, " " MODE " ", &num) != 1) {
                 free(command);
-                return kErrorSize; //
+                return kErrorSize;
             }
-            CALL_CHECK_STACK(StackPush(stk, num, open_log_file));
+            CHECK_STACK_RETURN(StackPush(stk, num, open_log_file));
 
         } else if (strcmp(command, POP) == 0) {
-            CALL_CHECK_STACK(StackPop(stk, &num, open_log_file));
+            CHECK_STACK_RETURN(StackPop(stk, &num, open_log_file));
 
         } else if (strcmp(command, ADD) == 0) {
-            CALL_CHECK_STACK(StackBinaryOperation(stk, Add, open_log_file));
+            CHECK_STACK_RETURN(StackBinaryOperation(stk, Add, open_log_file));
 
         } else if (strcmp(command, SUB) == 0) {
-            CALL_CHECK_STACK(StackBinaryOperation(stk, Sub, open_log_file));
+            CHECK_STACK_RETURN(StackBinaryOperation(stk, Sub, open_log_file));
 
         } else if (strcmp(command, MUL) == 0) {
-            CALL_CHECK_STACK(StackBinaryOperation(stk, Mul, open_log_file));
+            CHECK_STACK_RETURN(StackBinaryOperation(stk, Mul, open_log_file));
 
         } else if (strcmp(command, DIV) == 0) {
             Stack_t rhs = 0, lhs = 0;
-            CALL_CHECK_STACK(StackPop(stk, &rhs, open_log_file));
-            CALL_CHECK_STACK(StackPop(stk, &lhs, open_log_file));
+            CHECK_STACK_RETURN(StackPop(stk, &rhs, open_log_file));
+            CHECK_STACK_RETURN(StackPop(stk, &lhs, open_log_file));
 
             if (rhs != 0) {
-                CALL_CHECK_STACK(StackPush(stk, lhs / rhs, open_log_file));
+                CHECK_STACK_RETURN(StackPush(stk, lhs / rhs, open_log_file));
             } else {
                 printf("Zero Div error.\n");
                 free(command);
@@ -68,9 +68,13 @@ StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file, FILE *open_log_file) {
             }
 
         } else if (strcmp(command, SQRT) == 0) {
-            CALL_CHECK_STACK(StackPop(stk, &num, open_log_file));
+            CHECK_STACK_RETURN(StackPop(stk, &num, open_log_file));
             num = (Stack_t)bin_search(num);
-            CALL_CHECK_STACK(StackPush(stk, num, open_log_file));
+            CHECK_STACK_RETURN(StackPush(stk, num, open_log_file));
+
+        } else if (strcmp(command, OUT) == 0) {
+            CHECK_STACK_RETURN(StackPop(stk, &num, open_log_file));
+            fprintf(open_out_file, "" MODE " \n", num);
 
         } else {
             fprintf(open_log_file, "No command found.\n");
@@ -81,7 +85,7 @@ StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file, FILE *open_log_file) {
         fscanf(file, "%s", command);
     }
 
-    free(command); // everywhere
+    free(command);
     return kSuccess;
 }
 
@@ -106,8 +110,8 @@ static StackErr_t StackBinaryOperation(Stack_Info *stk, Stack_t (*operation)(Sta
     Stack_t rhs = 0, lhs = 0, result = 0;
     StackErr_t err = kSuccess;
 
-    CALL_CHECK_STACK(StackPop(stk, &rhs, file));
-    CALL_CHECK_STACK(StackPop(stk, &lhs, file));
+    CHECK_STACK_RETURN(StackPop(stk, &rhs, file));
+    CHECK_STACK_RETURN(StackPop(stk, &lhs, file));
 
     result = operation(lhs, rhs);
 

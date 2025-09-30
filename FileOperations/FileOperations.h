@@ -10,7 +10,7 @@
 
 extern const char *log_file;
 
-#define CALL_CHECK_IN_OUT(call) \
+#define CALL_CHECK_IN_OUT_RETURN(call) \
     read_write_error = (call); \
     if (read_write_error != kNoError) { \
         return read_write_error; \

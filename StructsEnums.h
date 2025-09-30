@@ -46,8 +46,14 @@ struct Stack_Info {
 #ifdef _DEBUG
     Stack_t *real_data;
     Source_Location_Info create_var_info;
+#endif
+
+#ifdef _CANARY
     uint32_t canary_left;
     uint32_t canary_right;
+#endif
+
+#ifdef _HASH
     uint32_t data_hash;
 #endif
 };
@@ -58,6 +64,7 @@ enum Realloc_Mode {
 };
 
 struct Files {
+    const char *log_file;
     FILE *open_log_file;
     const char *in_file;
     FILE *open_in_file;

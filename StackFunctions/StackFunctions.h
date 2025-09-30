@@ -17,7 +17,17 @@
 
 #define STACKDUMP(open_log_file, stk_name, err) StackDump(open_log_file, *stk_name, __func__, __LINE__, __FILE__, err, #stk_name)
 
-StackErr_t StackCtor(Stack_Info *stk, ssize_t value, FILE *open_log_file);
+#ifndef _DEBUG
+    #define INIT_STACK(name) \
+        Stack_Info name = {.data = nullptr, .size = 0, .capacity = 0}
+#else 
+    #define INIT_STACK(name) \
+        Stack_Info name = {.data = nullptr, .size = 0, .capacity = 0, \
+            .create_var_info.file_name = __FILE__, .create_var_info.func_name = __func__, \
+            .create_var_info.var = #name, .create_var_info.line = __LINE__} 
+#endif
+
+StackErr_t StackCtor(Stack_Info *stk, ssize_t capacity, FILE *open_log_file);
 StackErr_t StackPush(Stack_Info *stk, Stack_t value, FILE *open_log_file);
 StackErr_t StackPop(Stack_Info *stk, Stack_t *value, FILE *open_log_file);
 Realloc_Mode CheckSize(ssize_t size, ssize_t *capacity);

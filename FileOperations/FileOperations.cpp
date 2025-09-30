@@ -5,64 +5,33 @@
 
 #include "StructsEnums.h"
 
-const char *log_file = NULL;
+static ParseErr_t OpenFileOrDefault(const char *filename, const char *mode, FILE **file_ptr, FILE *default_file);
 
 ParseErr_t Handle_Open_File(Files *in_out_files) {
     assert(in_out_files);
 
-    if (log_file != NULL) {
-        in_out_files->open_log_file = Open_File(log_file, WRITE_MODE);
-        if (in_out_files->open_log_file == NULL) {
-            return kErrorOpening;
-        }
-    } else {
-        in_out_files->open_log_file = stdout;
-    }
+    ParseErr_t read_write_error = kNoError; 
+    CALL_CHECK_IN_OUT_RETURN(OpenFileOrDefault(in_out_files->log_file, WRITE_MODE, &in_out_files->open_log_file, stdout));
+    CALL_CHECK_IN_OUT_RETURN(OpenFileOrDefault(in_out_files->in_file, READ_MODE, &in_out_files->open_in_file, stdin));
+    CALL_CHECK_IN_OUT_RETURN(OpenFileOrDefault(in_out_files->out_file, WRITE_MODE, &in_out_files->open_out_file, stdout));
 
-    if (in_out_files->in_file != NULL) {
-        in_out_files->open_in_file = Open_File(in_out_files->in_file, READ_MODE);
-        if (in_out_files->open_in_file == NULL) {
-            return kErrorOpening;
-        }
-    } else {
-        in_out_files->open_in_file = stdin;
-    }
-
-    if (in_out_files->out_file != NULL) {
-        in_out_files->open_out_file = Open_File(in_out_files->out_file, WRITE_MODE);
-        if (in_out_files->open_out_file == NULL) {
-            return kErrorOpening;
-        }
-    } else {
-        in_out_files->open_out_file = stdout;
-    }
-
-   return kNoError;
+    return kNoError;
 }
 
+
 ParseErr_t Handle_Close_File(Files in_out_files) {
-    ParseErr_t err = kNoError;
+    ParseErr_t read_write_error = kNoError;
 
-    if (log_file != NULL) {
-        err = Close_File(in_out_files.open_log_file);
-        if (err != kNoError) {
-            return err;
-        }
-
+    if (in_out_files.log_file != NULL) {
+        CALL_CHECK_IN_OUT_RETURN(Close_File(in_out_files.open_log_file));
     }
 
     if (in_out_files.open_in_file != stdin) {
-        err = Close_File(in_out_files.open_in_file);
-        if (err != kNoError) {
-            return err;
-        }
+        CALL_CHECK_IN_OUT_RETURN(Close_File(in_out_files.open_in_file));
     }
 
     if (in_out_files.open_out_file != stdout) {
-        err = Close_File(in_out_files.open_out_file);
-        if (err != kNoError) {
-            return err;
-        }
+        CALL_CHECK_IN_OUT_RETURN(Close_File(in_out_files.open_out_file));
     }
 
    return kNoError;
@@ -90,5 +59,17 @@ ParseErr_t Close_File(FILE *file) {
         return kErrorClosing;
     }
 
+    return kNoError;
+}
+
+static ParseErr_t OpenFileOrDefault(const char *filename, const char *mode, FILE **file_ptr, FILE *default_file) {
+    if (filename != NULL) {
+        *file_ptr = Open_File(filename, mode);
+        if (*file_ptr == NULL) {
+            return kErrorOpening;
+        }
+    } else {
+        *file_ptr = default_file;
+    }
     return kNoError;
 }

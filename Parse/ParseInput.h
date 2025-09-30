@@ -15,13 +15,14 @@
 #define DIV "DIV"
 #define SQRT "SQRT"
 #define HLT "HLT"
+#define OUT "OUT"
 
-#define CALL_CHECK_STACK(call) \
+#define CHECK_STACK_RETURN(call) \
     err = (call); \
     if (err != kSuccess) { \
         return err; \
     }
 
-StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file, FILE *open_log_file);
+StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file, FILE *open_log_file, FILE *open_out_file);
 
 #endif //PARSE_INPUT_H_

@@ -20,7 +20,7 @@ ParseErr_t Parse_Input(const char **argv, int argc, Files *in_out_files) {
     if (argc > 2) {
         while (pos + 1 < argc) {
             if (strcmp(argv[pos], LOG_MODE) == 0) {
-                log_file = argv[pos + 1];
+                in_out_files->log_file = argv[pos + 1];
                 pos += 2;
 
             } else if (strcmp(argv[pos], IN_MODE) == 0) {
