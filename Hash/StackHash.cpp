@@ -5,7 +5,7 @@
 
 #include "StructsEnums.h"
 
-uint32_t hash_data(const Stack_t *data, ssize_t size) {
+uint32_t Hash_Data(const Stack_t *data, ssize_t size) {
     assert(data);
 
     uint32_t hash = 5381;
@@ -15,19 +15,19 @@ uint32_t hash_data(const Stack_t *data, ssize_t size) {
     return hash;
 }
 
-void update_data_hash(Stack_Info *stk) {
+void Update_Data_Hash(Stack_Info *stk) {
     assert(stk);
 
 #ifdef _DEBUG
-    stk->data_hash = hash_data(stk->data, stk->size);
+    stk->data_hash = Hash_Data(stk->data, stk->size);
 #endif
 }
 
-int check_data_hash(const Stack_Info *stk) {
+int Check_Data_Hash(const Stack_Info *stk) {
     assert(stk);
     
 #ifdef _DEBUG
-    return (stk->data_hash == hash_data(stk->data, stk->size));
+    return (stk->data_hash == Hash_Data(stk->data, stk->size));
 #endif
 }
 

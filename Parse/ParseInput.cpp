@@ -11,13 +11,17 @@
 static Stack_t Add(Stack_t a, Stack_t b);
 static Stack_t Sub(Stack_t a, Stack_t b);
 static Stack_t Mul(Stack_t a, Stack_t b);
-static StackErr_t StackBinaryOp(Stack_Info *stk, Stack_t (*op)(Stack_t, Stack_t), FILE *file);
+static StackErr_t StackBinaryOperation(Stack_Info *stk, Stack_t (*operation)(Stack_t, Stack_t), FILE *file);
 
-StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file) {
+StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file, FILE *open_log_file) {
     assert(stk);
     assert(file);
 
-    char *command = (char *)calloc(1000, sizeof(char));
+    if (file == stdin) {
+        printf("Введите команды PUSH, ADD, POP, DIV, BIN.\n");
+    }
+
+    char *command = (char *) calloc(1000, sizeof(char));
     if (command == NULL) {
         printf("No memory in calloc to read buf.\n");
         return kNoMemory;
@@ -36,40 +40,40 @@ StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file) {
                 free(command);
                 return kErrorSize; //
             }
-            CALL_CHECK(StackPush(stk, num, file));
+            CALL_CHECK_STACK(StackPush(stk, num, open_log_file));
 
         } else if (strcmp(command, POP) == 0) {
-            CALL_CHECK(StackPop(stk, &num, file));
+            CALL_CHECK_STACK(StackPop(stk, &num, open_log_file));
 
         } else if (strcmp(command, ADD) == 0) {
-            CALL_CHECK(StackBinaryOp(stk, Add, file));
+            CALL_CHECK_STACK(StackBinaryOperation(stk, Add, open_log_file));
 
         } else if (strcmp(command, SUB) == 0) {
-            CALL_CHECK(StackBinaryOp(stk, Sub, file));
+            CALL_CHECK_STACK(StackBinaryOperation(stk, Sub, open_log_file));
 
         } else if (strcmp(command, MUL) == 0) {
-            CALL_CHECK(StackBinaryOp(stk, Mul, file));
+            CALL_CHECK_STACK(StackBinaryOperation(stk, Mul, open_log_file));
 
         } else if (strcmp(command, DIV) == 0) {
             Stack_t rhs = 0, lhs = 0;
-            CALL_CHECK(StackPop(stk, &rhs, file));
-            CALL_CHECK(StackPop(stk, &lhs, file));
+            CALL_CHECK_STACK(StackPop(stk, &rhs, open_log_file));
+            CALL_CHECK_STACK(StackPop(stk, &lhs, open_log_file));
 
             if (rhs != 0) {
-                CALL_CHECK(StackPush(stk, lhs / rhs, file));
+                CALL_CHECK_STACK(StackPush(stk, lhs / rhs, open_log_file));
             } else {
                 printf("Zero Div error.\n");
                 free(command);
-             // код ошибки деления на 0 должен быть определён
+                return kZeroNumber;
             }
 
         } else if (strcmp(command, SQRT) == 0) {
-            CALL_CHECK(StackPop(stk, &num, file));
+            CALL_CHECK_STACK(StackPop(stk, &num, open_log_file));
             num = (Stack_t)bin_search(num);
-            CALL_CHECK(StackPush(stk, num, file));
+            CALL_CHECK_STACK(StackPush(stk, num, open_log_file));
 
         } else {
-            fprintf(file, "No command found.\n");
+            fprintf(open_log_file, "No command found.\n");
             free(command);
             return kNoCommand;
         }
@@ -77,7 +81,7 @@ StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file) {
         fscanf(file, "%s", command);
     }
 
-    free(command);
+    free(command); // everywhere
     return kSuccess;
 }
 
@@ -94,21 +98,18 @@ static Stack_t Mul(Stack_t a, Stack_t b) {
     return a * b; 
 }
 
-static StackErr_t StackBinaryOp(Stack_Info *stk, Stack_t (*op)(Stack_t, Stack_t), FILE *file) {
+static StackErr_t StackBinaryOperation(Stack_Info *stk, Stack_t (*operation)(Stack_t, Stack_t), FILE *file) {
     assert(stk);
-    assert(op);
+    assert(operation);
     assert(file);
 
     Stack_t rhs = 0, lhs = 0, result = 0;
     StackErr_t err = kSuccess;
 
-    err = StackPop(stk, &rhs, file);
-    if (err != kSuccess) return err;
+    CALL_CHECK_STACK(StackPop(stk, &rhs, file));
+    CALL_CHECK_STACK(StackPop(stk, &lhs, file));
 
-    err = StackPop(stk, &lhs, file);
-    if (err != kSuccess) return err;
-
-    result = op(lhs, rhs);
+    result = operation(lhs, rhs);
 
     err = StackPush(stk, result, file);
     return err;

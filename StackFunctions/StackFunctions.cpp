@@ -10,12 +10,13 @@
 #include "StructsEnums.h"
 #include "StackHash.h"
 #include "FileOperations.h"
-
-//TODO clean POISON
+#include "ParseInput.h"
 
 StackErr_t StackCtor(Stack_Info *stk, ssize_t value, FILE *open_log_file) {
     assert(stk);
     assert(open_log_file);
+
+    StackErr_t err = kSuccess;
 
     stk->capacity = value;
     if (value < 0) {
@@ -24,22 +25,38 @@ StackErr_t StackCtor(Stack_Info *stk, ssize_t value, FILE *open_log_file) {
     }
 
     stk->size = 0;
+// #ifdef _DEBUG
+//     err = MakeCanary(stk, open_log_file);
+//     if (err != kSuccess) {
+//         STACKDUMP(open_log_file, stk, kNoMemory);
+//         return err;
+//     }
+//     Update_Data_Hash(stk);
+// #else
+//     stk->data = (Stack_t *) calloc ((size_t)value, sizeof(Stack_t));
+// #endif
 
-    StackErr_t err = kSuccess;
-    //StackErr_t err = CheckError(stk, open_log_file);
-    // if (err != kSuccess) {
-    //     return err;
-    // }
+//     if (stk->data == NULL) {
+//         STACKDUMP(open_log_file, stk, kNoMemory);
+//         return kNoMemory;
+//     }
 
+//     return kSuccess;
+// }
 #ifdef _DEBUG
     err = MakeCanary(stk, open_log_file);
     if (err != kSuccess) {
         STACKDUMP(open_log_file, stk, kNoMemory);
         return err;
     }
-    update_data_hash(stk);
+    Update_Data_Hash(stk);
 #else
-    stk->data = (Stack_t *) calloc ((size_t)value, sizeof(Stack_t));
+    if (value == 0) value = 2; 
+    stk->data = (Stack_t *) calloc((size_t)value, sizeof(*stk->data));
+    if (!stk->data) {
+        STACKDUMP(open_log_file, stk, kNoMemory);
+        return kNoMemory;
+    }
 #endif
 
     if (stk->data == NULL) {
@@ -47,6 +64,7 @@ StackErr_t StackCtor(Stack_Info *stk, ssize_t value, FILE *open_log_file) {
         return kNoMemory;
     }
 
+    CALL_CHECK_STACK(CheckError(stk, open_log_file));
     return kSuccess;
 }
 
@@ -68,13 +86,12 @@ StackErr_t StackPush(Stack_Info *stk, Stack_t value, FILE *open_log_file) {
     }
 
     stk->data[stk->size++] = value;
-    update_data_hash(stk);
 
-    err = CheckError(stk, open_log_file);
-    if (err != kSuccess) {
-        return err;
-    }
+#ifdef _DEBUG
+    Update_Data_Hash(stk);
+#endif
 
+    CALL_CHECK_STACK(CheckError(stk, open_log_file));
     return kSuccess;
 }
 
@@ -83,10 +100,8 @@ StackErr_t StackPop(Stack_Info *stk, Stack_t *value, FILE *open_log_file) {
     assert(value);
     assert(open_log_file);
 
-    StackErr_t err = CheckError(stk, open_log_file);
-    if (err != kSuccess) {
-        return err;
-    }
+    StackErr_t err = kSuccess;
+    CALL_CHECK_STACK(CheckError(stk, open_log_file));
 
     if (stk->size == 0) {
         return kEmptyStack;
@@ -95,15 +110,17 @@ StackErr_t StackPop(Stack_Info *stk, Stack_t *value, FILE *open_log_file) {
     *value = stk->data[--stk->size];
     stk->data[stk->size] = 0;
 
-    update_data_hash(stk);
+#ifdef _DEBUG
+    Update_Data_Hash(stk);
+#endif
 
-    err = CheckError(stk, open_log_file);
-    if (err != kSuccess) {
-        return err;
-    }
+    CALL_CHECK_STACK(CheckError(stk, open_log_file));
 
     Realloc_Mode realloc_type = CheckSize(stk->size, &stk->capacity);
     if (realloc_type != kNoChange) {
+#ifdef _DEBUG
+        Update_Data_Hash(stk);
+#endif
         err = StackRealloc(stk, open_log_file);
         if (err != kSuccess) {
             return err;
@@ -122,10 +139,8 @@ StackErr_t StackTop(Stack_Info stk, Stack_t *value, FILE *open_log_file) {
     assert(value);
     assert(open_log_file);
 
-    StackErr_t err = CheckError(&stk, open_log_file);
-    if (err != kSuccess) {
-        return err;
-    }
+    StackErr_t err = kSuccess;
+    CALL_CHECK_STACK(CheckError(&stk, open_log_file));
     
     if (stk.size == 0) {
         STACKDUMP(open_log_file, &stk, kEmptyStack);
@@ -133,10 +148,11 @@ StackErr_t StackTop(Stack_Info stk, Stack_t *value, FILE *open_log_file) {
     }
 
     *value = stk.data[stk.size - 1];
+    CALL_CHECK_STACK(CheckError(&stk, open_log_file));
     return kSuccess;
 }
 
-Realloc_Mode CheckSize(ssize_t size, ssize_t *capacity) { //если размеры очень большие
+Realloc_Mode CheckSize(ssize_t size, ssize_t *capacity) {
     assert(capacity);
 
     if (size * INCREASE_VALUE > *capacity) {
@@ -159,11 +175,6 @@ Realloc_Mode CheckSize(ssize_t size, ssize_t *capacity) { //если разме�
 StackErr_t StackRealloc(Stack_Info *stk, FILE *open_log_file) {
     assert(stk);
     assert(open_log_file);
-
-    // StackErr_t err = CheckError(stk, open_log_file);
-    // if (err != kSuccess) {
-    //     return err;
-    // }
 
 #ifdef _DEBUG
     size_t new_elems = (size_t)stk->capacity + 2;
@@ -188,10 +199,8 @@ StackErr_t StackRealloc(Stack_Info *stk, FILE *open_log_file) {
     stk->data = realloc_ptr;
 #endif
 
-    StackErr_t err = CheckError(stk, open_log_file);
-    if (err != kSuccess) {
-        return err;
-    }
+    StackErr_t err = kSuccess;
+    CALL_CHECK_STACK(CheckError(stk, open_log_file));
 
     return kSuccess;
 }
@@ -200,10 +209,8 @@ StackErr_t StackDtor(Stack_Info *stk, FILE *open_log_file) {
     assert(stk);
     assert(open_log_file);
 
-    StackErr_t err = CheckError(stk, open_log_file);
-    if (err != kSuccess) {
-        return err;
-    }
+    StackErr_t err = kSuccess;
+    CALL_CHECK_STACK(CheckError(stk, open_log_file));
 
     stk->size = -1;
     stk->capacity = -1;
@@ -212,6 +219,8 @@ StackErr_t StackDtor(Stack_Info *stk, FILE *open_log_file) {
         free(stk->real_data);
         stk->create_var_info = {NULL, NULL, 0};
         stk->data_hash = 0;
+#else
+        free(stk->data);
 #endif
 
     return kSuccess;
@@ -253,9 +262,10 @@ Stack_t StackDump(FILE *open_log_file, Stack_Info stk, const char *func_name, in
 
 #ifdef _DEBUG
     if (stk.capacity >= 0) {
-        fprintf(open_log_file, "  canary_left = %u (real[%d])\n", stk.real_data[0], 0);
-        fprintf(open_log_file, "  canary_right = %u (real[%zd])\n", 
+        fprintf(open_log_file, "canary_left = %u (real[%d])\n", stk.real_data[0], 0);
+        fprintf(open_log_file, "canary_right = %u (real[%zd])\n", 
             stk.real_data[stk.capacity + 1], stk.capacity + 1);
+        fprintf(open_log_file, "hash = %u", stk.data_hash);
     }
 #endif
 
@@ -311,7 +321,7 @@ StackErr_t CheckError(Stack_Info *stk, FILE *open_log_file) {
         return kWrongCanaryRight;
     }
 
-    if (!check_data_hash(stk)) {
+    if (!Check_Data_Hash(stk)) {
         STACKDUMP(open_log_file, stk, kHashMismatch);
         return kHashMismatch;
     }
@@ -329,29 +339,28 @@ const char *GetErrorString(StackErr_t err) {
         case kNoMemory: return "No memory";
         case kErrorSize: return "Size error";
         case kEmptyStack: return "Empty stack";
-        case kErrorOpening: return "Open open_log_file failed";
-        case kErrorClosing: return "Close open_log_file failed";
         case kWrongCanaryLeft: return "Wrong canary left value";
         case kWrongCanaryRight: return "Wrong canary right value";
         case kHashMismatch: return "Hash mismatch. Stack corrupted";
         case kNoCommand: return "No command found";
+        case kZeroNumber: return "Zero number div";
         default: return "Unknown error";
     }
 }
 
 double bin_search(Stack_t n) {
-    double l = 0;
-    double r = (double)n;
+    double left = 0;
+    double right = (double)n;
 
-    while (r - l > 1e-9) {
+    while (right - left > 1e-9) {
         
-        double mid = (l + r) / 2;
+        double mid = (left + right) / 2;
         if (mid * mid  > n) {
-            r = mid;
+            right = mid;
         } else {
-            l = mid;
+            left = mid;
         }
     }
 
-    return l;
+    return left;
 } // убрать куда-нибудь

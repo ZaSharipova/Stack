@@ -15,7 +15,7 @@
 #define INCREASE_VALUE 2
 #define DECREASE_VALUE 4
 
-#define STACKDUMP(open_log_file, name, err) StackDump(open_log_file, *name, __func__, __LINE__, __FILE__, err, #name)
+#define STACKDUMP(open_log_file, stk_name, err) StackDump(open_log_file, *stk_name, __func__, __LINE__, __FILE__, err, #stk_name)
 
 StackErr_t StackCtor(Stack_Info *stk, ssize_t value, FILE *open_log_file);
 StackErr_t StackPush(Stack_Info *stk, Stack_t value, FILE *open_log_file);

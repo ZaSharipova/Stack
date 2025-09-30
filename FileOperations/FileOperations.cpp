@@ -7,11 +7,11 @@
 
 const char *log_file = NULL;
 
-StackErr_t Handle_Open_File(Files *in_out_files) {
+ParseErr_t Handle_Open_File(Files *in_out_files) {
     assert(in_out_files);
 
     if (log_file != NULL) {
-        in_out_files->open_log_file = Open_File(log_file, "w");
+        in_out_files->open_log_file = Open_File(log_file, WRITE_MODE);
         if (in_out_files->open_log_file == NULL) {
             return kErrorOpening;
         }
@@ -20,7 +20,7 @@ StackErr_t Handle_Open_File(Files *in_out_files) {
     }
 
     if (in_out_files->in_file != NULL) {
-        in_out_files->open_in_file = Open_File(in_out_files->in_file, "r");
+        in_out_files->open_in_file = Open_File(in_out_files->in_file, READ_MODE);
         if (in_out_files->open_in_file == NULL) {
             return kErrorOpening;
         }
@@ -29,7 +29,7 @@ StackErr_t Handle_Open_File(Files *in_out_files) {
     }
 
     if (in_out_files->out_file != NULL) {
-        in_out_files->open_out_file = Open_File(in_out_files->out_file, "w");
+        in_out_files->open_out_file = Open_File(in_out_files->out_file, WRITE_MODE);
         if (in_out_files->open_out_file == NULL) {
             return kErrorOpening;
         }
@@ -37,37 +37,35 @@ StackErr_t Handle_Open_File(Files *in_out_files) {
         in_out_files->open_out_file = stdout;
     }
 
-   return kSuccess;
+   return kNoError;
 }
 
-StackErr_t Handle_Close_File(Files in_out_files) {
+ParseErr_t Handle_Close_File(Files in_out_files) {
+    ParseErr_t err = kNoError;
 
     if (log_file != NULL) {
-        StackErr_t err = kSuccess;
         err = Close_File(in_out_files.open_log_file);
-        if (err != kSuccess) {
+        if (err != kNoError) {
             return err;
         }
 
     }
 
     if (in_out_files.open_in_file != stdin) {
-        StackErr_t err = kSuccess;
         err = Close_File(in_out_files.open_in_file);
-        if (err != kSuccess) {
+        if (err != kNoError) {
             return err;
         }
     }
 
     if (in_out_files.open_out_file != stdout) {
-        StackErr_t err = kSuccess;
         err = Close_File(in_out_files.open_out_file);
-        if (err != kSuccess) {
+        if (err != kNoError) {
             return err;
         }
     }
 
-   return kSuccess;
+   return kNoError;
 }
 
 FILE *Open_File(const char *filename, const char *mode) {
@@ -83,7 +81,7 @@ FILE *Open_File(const char *filename, const char *mode) {
     return file;
 }
 
-StackErr_t Close_File(FILE *file) {
+ParseErr_t Close_File(FILE *file) {
     assert(file);
 
     int status = fclose(file);
@@ -92,5 +90,5 @@ StackErr_t Close_File(FILE *file) {
         return kErrorClosing;
     }
 
-    return kSuccess;
+    return kNoError;
 }

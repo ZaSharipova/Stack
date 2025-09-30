@@ -16,12 +16,12 @@
 #define SQRT "SQRT"
 #define HLT "HLT"
 
-#define CALL_CHECK(call) \
+#define CALL_CHECK_STACK(call) \
     err = (call); \
     if (err != kSuccess) { \
         return err; \
     }
 
-StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file);
+StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file, FILE *open_log_file);
 
 #endif //PARSE_INPUT_H_

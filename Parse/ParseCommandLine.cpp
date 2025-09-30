@@ -13,7 +13,7 @@ ParseErr_t Parse_Input(const char **argv, int argc, Files *in_out_files) {
     int pos = 1;
 
     if (argc == 2) {
-        printf("Please, enter normally next time.\n");
+        fprintf(stderr, "Please, enter normally next time.\n");
         return kErrorParsing;
     }
 
@@ -32,7 +32,7 @@ ParseErr_t Parse_Input(const char **argv, int argc, Files *in_out_files) {
                 pos += 2;
 
             } else {
-                printf("Wrong mode %s.\n", argv[pos]);
+                fprintf(stderr, "Wrong mode %s.\n", argv[pos]);
                 return kWrongMode;
             }
         }

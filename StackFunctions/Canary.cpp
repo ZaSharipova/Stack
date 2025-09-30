@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "ParseInput.h"
+
 uint32_t stack_canary_left;
 uint32_t stack_canary_right;
 
@@ -10,7 +12,9 @@ StackErr_t MakeCanary(Stack_Info *stk, FILE *open_log_file) {
     assert(stk);
     assert(open_log_file);
 
+
 #ifdef _DEBUG
+
     Stack_t *stack_ptr = (Stack_t *) calloc((size_t)stk->capacity + 2, sizeof(*stack_ptr));
     if (stack_ptr == NULL) {
         STACKDUMP(open_log_file, stk, kNoMemory);
@@ -29,7 +33,6 @@ StackErr_t MakeCanary(Stack_Info *stk, FILE *open_log_file) {
 
     return kSuccess;
 #endif
-    //обработка ошибок
 }
 
 uint32_t Init_Canary(void) {

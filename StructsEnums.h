@@ -12,22 +12,23 @@ enum StackErr_t {
     kSuccess          =   0,
     kNegativeSize     =  -1,
     kNegativeCapacity =  -2,
-    kErrorOpening     =  -3,
-    kErrorClosing     =  -4,
-    kNoMemory         =  -5,
-    kNullPointer      =  -6,
-    kErrorSize        =  -7,
-    kEmptyStack       =  -8,
-    kWrongCanaryLeft  =  -9,
-    kWrongCanaryRight = -10,
-    kHashMismatch     = -11,
-    kNoCommand        = -12,
+    kNoMemory         =  -3,
+    kNullPointer      =  -4,
+    kErrorSize        =  -5,
+    kEmptyStack       =  -6,
+    kWrongCanaryLeft  =  -7,
+    kWrongCanaryRight =  -8,
+    kHashMismatch     =  -9,
+    kNoCommand        = -10,
+    kZeroNumber       = -11,
 };
 
 enum ParseErr_t {
     kNoError      = 0,
     kErrorParsing = -1,
     kWrongMode    = -2,
+    kErrorOpening = -3,
+    kErrorClosing = -4,
 };
 
 struct Source_Location_Info {

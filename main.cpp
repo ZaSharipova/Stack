@@ -20,19 +20,12 @@
 int main(int argc, const char **argv) {
     Files in_out_files = {.in_file = NULL, .out_file = NULL};
 
-    ParseErr_t error = kNoError;
+    ParseErr_t read_write_error = kNoError;
     StackErr_t err = kSuccess;
 
-    error = Parse_Input(argv, argc, &in_out_files);
-    if (error != kNoError) {
-        return error;
-    }
+    CALL_CHECK_IN_OUT(Parse_Input(argv, argc, &in_out_files));
 
-    err = Handle_Open_File(&in_out_files);
-    if (err != kSuccess) {
-        //TODO обработку ошибок
-        return err;
-    }
+    CALL_CHECK_IN_OUT(Handle_Open_File(&in_out_files));
 
 #ifdef _DEBUG
     INIT_STACK(stk1);
@@ -40,20 +33,13 @@ int main(int argc, const char **argv) {
     INIT_STACK(stk1);
 #endif
 
-    CALL_CHECK(StackCtor(&stk1, 1, in_out_files.open_log_file));
+    CALL_CHECK_STACK(StackCtor(&stk1, 3, in_out_files.open_log_file));
 
-    err = Parse_Graphics(&stk1, in_out_files.open_in_file);
-    if (err != kSuccess) {
-        printf("sdffd");
-        return err;
-    }
+    CALL_CHECK_STACK(Parse_Graphics(&stk1, in_out_files.open_in_file, in_out_files.open_log_file))
 
-    CALL_CHECK(StackDtor(&stk1, in_out_files.open_log_file));
+    CALL_CHECK_STACK(StackDtor(&stk1, in_out_files.open_log_file));
 
-    err = Handle_Close_File(in_out_files);
-    if (err != kSuccess) {
-        return err;
-    }
+    CALL_CHECK_IN_OUT(Handle_Close_File(in_out_files));
 
     return 0;
 }
