@@ -5,9 +5,11 @@
 
 #include "StructsEnums.h"
 
+static FILE *OpenFile(const char *filename, const char *mode);
+static ParseErr_t CloseFile(FILE *file);
 static ParseErr_t OpenFileOrDefault(const char *filename, const char *mode, FILE **file_ptr, FILE *default_file);
 
-ParseErr_t Handle_Open_File(Files *in_out_files) {
+ParseErr_t HandleOpenFile(Files *in_out_files) {
     assert(in_out_files);
 
     ParseErr_t read_write_error = kNoError; 
@@ -18,26 +20,25 @@ ParseErr_t Handle_Open_File(Files *in_out_files) {
     return kNoError;
 }
 
-
-ParseErr_t Handle_Close_File(Files in_out_files) {
+ParseErr_t HandleCloseFile(Files in_out_files) {
     ParseErr_t read_write_error = kNoError;
 
     if (in_out_files.log_file != NULL) {
-        CALL_CHECK_IN_OUT_RETURN(Close_File(in_out_files.open_log_file));
+        CALL_CHECK_IN_OUT_RETURN(CloseFile(in_out_files.open_log_file));
     }
 
     if (in_out_files.open_in_file != stdin) {
-        CALL_CHECK_IN_OUT_RETURN(Close_File(in_out_files.open_in_file));
+        CALL_CHECK_IN_OUT_RETURN(CloseFile(in_out_files.open_in_file));
     }
 
     if (in_out_files.open_out_file != stdout) {
-        CALL_CHECK_IN_OUT_RETURN(Close_File(in_out_files.open_out_file));
+        CALL_CHECK_IN_OUT_RETURN(CloseFile(in_out_files.open_out_file));
     }
 
    return kNoError;
 }
 
-FILE *Open_File(const char *filename, const char *mode) {
+static FILE *OpenFile(const char *filename, const char *mode) {
     assert(filename);
     assert(mode);
 
@@ -50,7 +51,7 @@ FILE *Open_File(const char *filename, const char *mode) {
     return file;
 }
 
-ParseErr_t Close_File(FILE *file) {
+static ParseErr_t CloseFile(FILE *file) {
     assert(file);
 
     int status = fclose(file);
@@ -63,8 +64,12 @@ ParseErr_t Close_File(FILE *file) {
 }
 
 static ParseErr_t OpenFileOrDefault(const char *filename, const char *mode, FILE **file_ptr, FILE *default_file) {
+    assert(mode);
+    assert(file_ptr);
+    assert(default_file);
+
     if (filename != NULL) {
-        *file_ptr = Open_File(filename, mode);
+        *file_ptr = OpenFile(filename, mode);
         if (*file_ptr == NULL) {
             return kErrorOpening;
         }

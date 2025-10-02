@@ -7,6 +7,8 @@
 #include "StructsEnums.h"
 
 StackErr_t MakeCanary(Stack_Info *stk, FILE *open_log_file);
-uint32_t Init_Canary(void);
+
+extern uint32_t canary_left;
+extern uint32_t canary_right;
 
 #endif //CANARY_H_

@@ -7,7 +7,7 @@
 #include "StructsEnums.h"
 #include "FileOperations.h"
 
-ParseErr_t Parse_Input(const char **argv, int argc, Files *in_out_files) {
+ParseErr_t ParseCommandLine(const char **argv, int argc, Files *in_out_files) {
     assert(argv);
 
     int pos = 1;

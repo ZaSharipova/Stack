@@ -31,5 +31,3 @@ int Check_Data_Hash(const Stack_Info *stk) {
     return (stk->data_hash == Hash_Data(stk->data, stk->size));
 #endif
 }
-
-

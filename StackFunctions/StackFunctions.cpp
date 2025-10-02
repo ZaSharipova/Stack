@@ -12,7 +12,25 @@
 #include "FileOperations.h"
 #include "ParseInput.h"
 
-StackErr_t StackCtor(Stack_Info *stk, ssize_t capacity, FILE *open_log_file) { //
+static Realloc_Mode CheckSize(ssize_t size, ssize_t *capacity);
+
+const char *GetErrorString[NUMBER_OF_ERRORS] = {
+    "Empty stack",
+    "Stack null pointer",
+    "Size error",
+    "Negative Capacity",
+    "Negative Size",
+    "Wrong canary left value",
+    "Wrong canary right value",
+    "Hash mismatch. Stack corrupted",
+    "No calloc memory",
+    "No memory available",
+    "Zero number beeing written",
+    "Number not written",
+    "Command not found",
+};
+
+StackErr_t StackCtor(Stack_Info *stk, ssize_t capacity, FILE *open_log_file) {
     assert(stk);
     assert(open_log_file);
 
@@ -27,7 +45,7 @@ StackErr_t StackCtor(Stack_Info *stk, ssize_t capacity, FILE *open_log_file) { /
     stk->size = 0;
 
 #ifdef _CANARY
-    CHECK_STACK_RETURN(MakeCanary(stk, open_log_file));
+    CHECK_ERROR_RETURN(MakeCanary(stk, open_log_file));
 #endif
 
 #ifndef _CANARY
@@ -42,12 +60,7 @@ StackErr_t StackCtor(Stack_Info *stk, ssize_t capacity, FILE *open_log_file) { /
     Update_Data_Hash(stk);
 #endif
 
-    if (stk->data == NULL) {
-        STACKDUMP(open_log_file, stk, kNoMemory);
-        return kNoMemory;
-    }
-
-    CHECK_STACK_RETURN(CheckError(stk, open_log_file));
+    CHECK_ERROR_RETURN(CheckError(stk, open_log_file));
     return kSuccess;
 }
 
@@ -56,11 +69,11 @@ StackErr_t StackPush(Stack_Info *stk, Stack_t value, FILE *open_log_file) {
     assert(open_log_file);
 
     StackErr_t err = kSuccess;
-    CHECK_STACK_RETURN(CheckError(stk, open_log_file));
+    CHECK_ERROR_RETURN(CheckError(stk, open_log_file));
 
     Realloc_Mode realloc_type = CheckSize(stk->size, &stk->capacity);
     if (realloc_type != kNoChange) {
-        CHECK_STACK_RETURN(StackRealloc(stk, open_log_file));
+        CHECK_ERROR_RETURN(StackRealloc(stk, open_log_file, realloc_type));
     }
 
     stk->data[stk->size++] = value;
@@ -69,7 +82,7 @@ StackErr_t StackPush(Stack_Info *stk, Stack_t value, FILE *open_log_file) {
     Update_Data_Hash(stk);
 #endif
 
-    CHECK_STACK_RETURN(CheckError(stk, open_log_file));
+    CHECK_ERROR_RETURN(CheckError(stk, open_log_file));
     return kSuccess;
 }
 
@@ -79,44 +92,40 @@ StackErr_t StackPop(Stack_Info *stk, Stack_t *value, FILE *open_log_file) {
     assert(open_log_file);
 
     StackErr_t err = kSuccess;
-    CHECK_STACK_RETURN(CheckError(stk, open_log_file));
+    CHECK_ERROR_RETURN(CheckError(stk, open_log_file));
 
     if (stk->size == 0) {
-        return kEmptyStack;
+        STACKDUMP(open_log_file, stk, kErrorEmptyStack);
+        return kErrorEmptyStack;
     }
 
     *value = stk->data[--stk->size];
-    stk->data[stk->size] = INT_MAX;
+    stk->data[stk->size] = POISON;
 
 #ifdef _HASH
     Update_Data_Hash(stk);
 #endif
 
-    CHECK_STACK_RETURN(CheckError(stk, open_log_file));
+    CHECK_ERROR_RETURN(CheckError(stk, open_log_file));
 
     Realloc_Mode realloc_type = CheckSize(stk->size, &stk->capacity);
     if (realloc_type != kNoChange) {
-
-#ifdef _HASH
-        Update_Data_Hash(stk);
-#endif
-        CHECK_STACK_RETURN(StackRealloc(stk, open_log_file));
+        CHECK_ERROR_RETURN(StackRealloc(stk, open_log_file, realloc_type));
     }
 
-    CHECK_STACK_RETURN(CheckError(stk, open_log_file));
+    CHECK_ERROR_RETURN(CheckError(stk, open_log_file));
 
     return kSuccess;
 }
 
-StackErr_t FillPoison(Stack_Info *stk) {
+void FillPoison(Stack_Info *stk) {
     assert(stk);
 
     ssize_t pos = stk->size;
     while (pos < stk->capacity) {
-        stk->data[pos] = INT_MAX; // 
+        stk->data[pos] = POISON; 
         pos++;
     }
-    return kSuccess;
 }
 
 StackErr_t StackTop(Stack_Info stk, Stack_t *value, FILE *open_log_file) {
@@ -124,45 +133,50 @@ StackErr_t StackTop(Stack_Info stk, Stack_t *value, FILE *open_log_file) {
     assert(open_log_file);
 
     StackErr_t err = kSuccess;
-    CHECK_STACK_RETURN(CheckError(&stk, open_log_file));
+    CHECK_ERROR_RETURN(CheckError(&stk, open_log_file));
     
     if (stk.size == 0) {
-        STACKDUMP(open_log_file, &stk, kEmptyStack);
-        return kEmptyStack;
+        STACKDUMP(open_log_file, &stk, kErrorEmptyStack);
+        return kErrorEmptyStack;
     }
 
     *value = stk.data[stk.size - 1];
-    CHECK_STACK_RETURN(CheckError(&stk, open_log_file));
-    return kSuccess;
+    CHECK_ERROR_RETURN(CheckError(&stk, open_log_file));
+    return err;
 }
 
-Realloc_Mode CheckSize(ssize_t size, ssize_t *capacity) {
+static Realloc_Mode CheckSize(ssize_t size, ssize_t *capacity) {
     assert(capacity);
 
     if (size * INCREASE_VALUE > *capacity) {
-        *capacity *= INCREASE_VALUE;
-        return kDoChange;
+        return kIncrease;
 
     } else if (size * DECREASE_VALUE < *capacity && size != 0 && *capacity >= 4) {
-        *capacity /= DECREASE_VALUE;
-        return kDoChange;
+        return kDecrease;
     }
 
     if (*capacity == 0) {
-        *capacity = 3;
-        return kDoChange;
+        return kIncreaseZero;
     }
 
     return kNoChange;
 }
 
-StackErr_t StackRealloc(Stack_Info *stk, FILE *open_log_file) {
+StackErr_t StackRealloc(Stack_Info *stk, FILE *open_log_file, Realloc_Mode realloc_type) {
     assert(stk);
     assert(open_log_file);
 
+    if (realloc_type == kIncrease) {
+        stk->capacity *= INCREASE_VALUE;
+    } else if (realloc_type == kDecrease) {
+        stk->capacity /= DECREASE_VALUE;
+    } else {
+        stk->capacity = 3;
+    }
+
 #ifdef _CANARY
     size_t new_elems = (size_t)stk->capacity + 2;
-    Stack_t *ptr = stk->real_data;
+    Stack_t *ptr = stk->data - 1;
 #else
     size_t new_elems = (size_t)stk->capacity;
     Stack_t *ptr = stk->data;
@@ -175,10 +189,9 @@ StackErr_t StackRealloc(Stack_Info *stk, FILE *open_log_file) {
     }
 
 #ifdef _CANARY
-    stk->real_data = realloc_ptr;
     stk->data = realloc_ptr + 1;
-    realloc_ptr[0] = (Stack_t)stk->canary_left; 
-    realloc_ptr[stk->capacity + 1] = (Stack_t)stk->canary_right;
+    realloc_ptr[0] = (Stack_t)canary_left; 
+    realloc_ptr[stk->capacity + 1] = (Stack_t)canary_right;
 #else
     stk->data = realloc_ptr;
 #endif
@@ -186,9 +199,9 @@ StackErr_t StackRealloc(Stack_Info *stk, FILE *open_log_file) {
     FillPoison(stk);
     
     StackErr_t err = kSuccess;
-    CHECK_STACK_RETURN(CheckError(stk, open_log_file));
+    CHECK_ERROR_RETURN(CheckError(stk, open_log_file));
 
-    return kSuccess;
+    return err;
 }
 
 StackErr_t StackDtor(Stack_Info *stk, FILE *open_log_file) {
@@ -196,13 +209,13 @@ StackErr_t StackDtor(Stack_Info *stk, FILE *open_log_file) {
     assert(open_log_file);
 
     StackErr_t err = kSuccess;
-    CHECK_STACK_RETURN(CheckError(stk, open_log_file));
+    CHECK_ERROR_RETURN(CheckError(stk, open_log_file));
 
     stk->size = -1;
     stk->capacity = -1;
 
 #ifdef _CANARY
-        free(stk->real_data);
+        free(stk->data - 1);
         stk->create_var_info = {NULL, NULL, 0};
         stk->data_hash = 0;
 #endif
@@ -212,20 +225,29 @@ StackErr_t StackDtor(Stack_Info *stk, FILE *open_log_file) {
 #endif
 
 #ifndef _DEBUG
-        free(stk->data);
+        free(stk->data - 1);
 #endif
 
-    return kSuccess;
+    return err;
 }
 
-Stack_t StackDump(FILE *open_log_file, Stack_Info stk, const char *func_name, int line, const char *file_from, StackErr_t err, const char *stk_name) {
+void StackDump(FILE *open_log_file, Stack_Info stk, const char *func_name, int line, const char *file_from, unsigned int error, const char *stk_name) {
     assert(open_log_file);
     assert(func_name);
     assert(file_from);
     assert(stk_name);
 
-    fprintf(open_log_file, "from %s, function %s: line %d\n", file_from, func_name, line);
-    fprintf(open_log_file, "error = %s%s%s\n", RED(open_log_file), GetErrorString(err), RESET(open_log_file)); 
+    unsigned int bit = 1;
+    fprintf(open_log_file, "errors: ");
+    for (int i = 0; i < NUMBER_OF_ERRORS; i++) {
+        if (error & bit) {
+            fprintf(open_log_file, "%s%s%s ", RED(open_log_file), GetErrorString[i], RESET(open_log_file));
+        }
+        bit <<= 1;
+    }
+
+    fprintf(open_log_file, "\nfrom %s, function %s: line %d\n", file_from, func_name, line);
+
     fprintf(open_log_file, "Stack name: %s\n", stk_name);
 
 #ifdef _DEBUG
@@ -254,9 +276,9 @@ Stack_t StackDump(FILE *open_log_file, Stack_Info stk, const char *func_name, in
 
 #ifdef _CANARY
     if (stk.capacity >= 0) {
-        fprintf(open_log_file, "canary_left = %u (real[%d])\n", stk.real_data[0], 0);
+        fprintf(open_log_file, "canary_left = %u (real[%d])\n", stk.data[-1], 0);
         fprintf(open_log_file, "canary_right = %u (real[%zd])\n", 
-            stk.real_data[stk.capacity + 1], stk.capacity + 1);
+            stk.data[stk.capacity], stk.capacity + 1);
     }
 #endif
 
@@ -264,87 +286,120 @@ Stack_t StackDump(FILE *open_log_file, Stack_Info stk, const char *func_name, in
     fprintf(open_log_file, "hash = %u", stk.data_hash);
 #endif
 
-    return kSuccess;
 }
 
 StackErr_t CheckError(Stack_Info *stk, FILE *open_log_file) {
     assert(stk);
     assert(open_log_file);
 
+    unsigned int error = 0;
+
     if (stk == NULL) {
-        STACKDUMP(open_log_file, stk, kNullPointer);
-        return kNullPointer;
+        error |= kErrorEmptyStack;
+        return (StackErr_t)error;
     }
 
     if (stk->data == NULL) {
-        STACKDUMP(open_log_file, stk, kNullPointer);
-        return kNullPointer;
+        error |= kErrorStackNullPointer;
     }
 
     if (stk->size > stk->capacity) {
-        STACKDUMP(open_log_file, stk, kErrorSize);
-        return kErrorSize;
+        error |= kSizeError;
     }
-
-#ifdef _DEBUG
-    if (stk->create_var_info.func_name == NULL || stk->create_var_info.file_name == NULL || \
-    stk->create_var_info.var == NULL) {
-        STACKDUMP(open_log_file, stk, kNullPointer);
-        return kNullPointer;
-    }
-#endif
 
     if (stk->size < 0) {
-        STACKDUMP(open_log_file, stk, kNegativeSize);
-        return kNegativeSize;
+        error |= kNegativeSize;
     }
-
+    
     if (stk->capacity < 0) {
-        STACKDUMP(open_log_file, stk, kNegativeCapacity);
-        return kNegativeCapacity;
-    }
- 
-#ifdef _CANARY
-    if (stk->canary_left != (uint32_t)stk->real_data[0]) {
-        STACKDUMP(open_log_file, stk, kWrongCanaryLeft);
-        return kWrongCanaryLeft;
+        error |= kNegativeCapacity;
     }
 
-    if (stk->canary_right != (uint32_t)stk->real_data[stk->capacity + 1]) {
-        STACKDUMP(open_log_file, stk, kWrongCanaryRight);
-        return kWrongCanaryRight;
+#ifdef _CANARY
+    if (canary_left != (uint32_t)stk->data[-1]) {
+       error |= kWrongCanaryLeft;
     }
+
+    if (canary_right != (uint32_t)stk->data[stk->capacity]) {
+        error |= kWrongCanaryRight;
+    }
+
 #endif
 
 #ifdef _HASH
     if (!Check_Data_Hash(stk)) {
-        STACKDUMP(open_log_file, stk, kHashMismatch);
-        return kHashMismatch;
+        error |= kWrongHash;
     }
 #endif
 
-    return kSuccess;
-}
-
-const char *GetErrorString(StackErr_t err) {
-    switch (err) {
-        case kSuccess: return "Success";
-        case kNegativeSize: return "Negative Size";
-        case kNegativeCapacity: return "Negative Capacity";
-        case kNullPointer: return "Null pointer";
-        case kNoMemory: return "No memory";
-        case kErrorSize: return "Size error";
-        case kEmptyStack: return "Empty stack";
-        case kWrongCanaryLeft: return "Wrong canary left value";
-        case kWrongCanaryRight: return "Wrong canary right value";
-        case kHashMismatch: return "Hash mismatch. Stack corrupted";
-        case kNoCommand: return "No command found";
-        case kZeroNumber: return "Zero number div";
-        default: return "Unknown error";
+    if (error != 0) {
+        STACKDUMP(open_log_file, stk, error);
     }
+
+    return (StackErr_t)error;
+
 }
 
-double bin_search(Stack_t n) {
+// StackErr_t CheckError(Stack_Info *stk, FILE *open_log_file) {
+//     assert(stk);
+//     assert(open_log_file);
+
+//     if (stk == NULL) {
+//         STACKDUMP(open_log_file, stk, kNullPointer);
+//         return kNullPointer;
+//     }
+
+//     if (stk->data == NULL) {
+//         STACKDUMP(open_log_file, stk, kNullPointer);
+//         return kNullPointer;
+//     }
+
+//     if (stk->size > stk->capacity) {
+//         STACKDUMP(open_log_file, stk, kErrorSize);
+//         return kErrorSize;
+//     }
+
+// #ifdef _DEBUG
+//     if (stk->create_var_info.func_name == NULL || stk->create_var_info.file_name == NULL || \
+//     stk->create_var_info.var == NULL) {
+//         STACKDUMP(open_log_file, stk, kNullPointer);
+//         return kNullPointer;
+//     }
+// #endif
+
+//     if (stk->size < 0) {
+//         STACKDUMP(open_log_file, stk, kNegativeSize);
+//         return kNegativeSize;
+//     }
+
+//     if (stk->capacity < 0) {
+//         STACKDUMP(open_log_file, stk, kNegativeCapacity);
+//         return kNegativeCapacity;
+//     }
+ 
+// #ifdef _CANARY
+//     if (stk->canary_left != (uint32_t)stk->real_data[0]) {
+//         STACKDUMP(open_log_file, stk, kWrongCanaryLeft);
+//         return kWrongCanaryLeft;
+//     }
+
+//     if (stk->canary_right != (uint32_t)stk->real_data[stk->capacity + 1]) {
+//         STACKDUMP(open_log_file, stk, kWrongCanaryRight);
+//         return kWrongCanaryRight;
+//     }
+// #endif
+
+// #ifdef _HASH
+//     if (!Check_Data_Hash(stk)) {
+//         STACKDUMP(open_log_file, stk, kHashMismatch);
+//         return kHashMismatch;
+//     }
+// #endif
+
+//     return kSuccess;
+// }
+
+double Sqrt(Stack_t n) {
     double left = 0;
     double right = (double)n;
 

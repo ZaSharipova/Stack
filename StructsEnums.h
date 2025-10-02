@@ -4,23 +4,26 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define MY_SPEC "%d"
+#include "Config.h"
 
-typedef int Stack_t;
+#define NUMBER_OF_ERRORS 13
 
 enum StackErr_t {
-    kSuccess          =   0,
-    kNegativeSize     =  -1,
-    kNegativeCapacity =  -2,
-    kNoMemory         =  -3,
-    kNullPointer      =  -4,
-    kErrorSize        =  -5,
-    kEmptyStack       =  -6,
-    kWrongCanaryLeft  =  -7,
-    kWrongCanaryRight =  -8,
-    kHashMismatch     =  -9,
-    kNoCommand        = -10,
-    kZeroNumber       = -11,
+    kErrorEmptyStack       = 1 << 0,
+    kErrorStackNullPointer = 1 << 1,
+    kSizeError             = 1 << 2,
+    kNegativeCapacity      = 1 << 3,
+    kNegativeSize          = 1 << 4,
+    kWrongCanaryLeft       = 1 << 5,
+    kWrongCanaryRight      = 1 << 6,
+    kWrongHash             = 1 << 7,
+    kNoCallocMemory        = 1 << 8,
+
+    kNoMemory              = 1 << 9,
+    kZeroNumber            = 1 << 10,
+    kNumberNotWritten      = 1 << 11,
+    kNoCommandFound        = 1 << 12,
+    kSuccess               = 0,
 };
 
 enum ParseErr_t {
@@ -44,13 +47,7 @@ struct Stack_Info {
     ssize_t capacity;
 
 #ifdef _DEBUG
-    Stack_t *real_data;
     Source_Location_Info create_var_info;
-#endif
-
-#ifdef _CANARY
-    uint32_t canary_left;
-    uint32_t canary_right;
 #endif
 
 #ifdef _HASH
@@ -59,8 +56,10 @@ struct Stack_Info {
 };
 
 enum Realloc_Mode {
-    kDoChange,
+    kIncrease,
+    kDecrease,
     kNoChange,
+    kIncreaseZero,
 };
 
 struct Files {

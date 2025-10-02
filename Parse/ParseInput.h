@@ -6,7 +6,6 @@
 
 #include "StructsEnums.h"
 
-#define MODE "%d"
 #define PUSH "PUSH"
 #define ADD "ADD"
 #define POP "POP"
@@ -23,6 +22,13 @@
         return err; \
     }
 
-StackErr_t Parse_Graphics(Stack_Info *stk, FILE *file, FILE *open_log_file, FILE *open_out_file);
+#define CHECK_STACK_FREE_RETURN(call) \
+    err = (call); \
+    if (err != kSuccess) { \
+        free(command); \
+        return err; \
+    }
+
+StackErr_t ParseGraphics(Stack_Info *stk, FILE *file, FILE *open_log_file, FILE *open_out_file);
 
 #endif //PARSE_INPUT_H_

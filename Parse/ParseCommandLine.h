@@ -7,6 +7,6 @@
 #define OUT_MODE "--out"
 #define LOG_MODE "--log"
 
-ParseErr_t Parse_Input(const char **argv, int argc, Files *in_out_files);
+ParseErr_t ParseCommandLine(const char **argv, int argc, Files *in_out_files);
 
 #endif //PARSE_COMMAND_LINE_H_
