@@ -1,0 +1,14 @@
+*.o
+*.exe
+*.save
+
+docs/
+html/
+latex/
+doxygen/
+
+Doxyfile
+
+*.log
+*.aux
+*.toc

@@ -166,12 +166,15 @@ StackErr_t StackRealloc(Stack_Info *stk, FILE *open_log_file, Realloc_Mode reall
     assert(stk);
     assert(open_log_file);
 
+    StackErr_t err = kSuccess;
+    CHECK_ERROR_RETURN(CheckError(stk, open_log_file));
+
     if (realloc_type == kIncrease) {
         stk->capacity *= INCREASE_VALUE;
     } else if (realloc_type == kDecrease) {
         stk->capacity /= DECREASE_VALUE;
     } else {
-        stk->capacity = 3;
+        stk->capacity = 1;
     }
 
 #ifdef _CANARY
@@ -198,7 +201,6 @@ StackErr_t StackRealloc(Stack_Info *stk, FILE *open_log_file, Realloc_Mode reall
 
     FillPoison(stk);
     
-    StackErr_t err = kSuccess;
     CHECK_ERROR_RETURN(CheckError(stk, open_log_file));
 
     return err;

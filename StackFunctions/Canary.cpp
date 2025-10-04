@@ -31,7 +31,7 @@ uint32_t canary_right = 0;
 
 void InitCanaries(void) {
     srand((unsigned int)time(NULL));
-    canary_left = InitCanary();
+    canary_left  = InitCanary();
     canary_right = InitCanary();
 }
 
