@@ -262,7 +262,7 @@ void StackDump(FILE *open_log_file, Stack_Info stk, const char *func_name, int l
     fprintf(open_log_file, "  capacity = %zd\n", stk.capacity);
     fprintf(open_log_file, "  data[%p] {\n", stk.data);
 
-    int pos = 0;
+    size_t pos = 0;
     while(pos < stk.size) {
         fprintf(open_log_file, "  *[%d] = " MY_SPEC "\n", pos, stk.data[pos]);
         pos++;
